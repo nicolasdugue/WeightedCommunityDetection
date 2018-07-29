@@ -1,0 +1,2 @@
+# WeightedCommunityDetection
+Weighted community detection
