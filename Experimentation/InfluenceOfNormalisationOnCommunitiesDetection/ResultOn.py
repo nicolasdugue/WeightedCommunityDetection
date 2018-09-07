@@ -19,14 +19,10 @@ argparser = argparse.ArgumentParser()
 argparser.add_argument("path", help="Directory with network and community", type=str)
 args = argparser.parse_args()
 path = args.path
-res
 print("__LOADINGS__")
 # loading of graph
-try:
-    G = nk.graphio.readGraph(os.path.join(path, "network.dat"), weighted=True, fileformat=nk.Format.EdgeListTabOne)
-except OSError as e:
-    print(e)
-    continue
+
+G = nk.graphio.readGraph(os.path.join(path, "network.dat"), weighted=True, fileformat=nk.Format.EdgeListTabOne)
 res = dict(numberOfnodes=G.numberOfNodes(), numberOfEdges=G.numberOfEdges())
 nk.overview(G)
 # loading of communities
@@ -34,8 +30,8 @@ evalname = "Groundtruth"
 print(f"__{evalname}__")
 gt_partition = nk.community.readCommunities(os.path.join(path, "community.dat"), format="edgelist-t1")
 nk.community.inspectCommunities(gt_partition, G)
-res[gid]["numberOfCom" + evalname] = gt_partition.numberOfSubsets()
-print(f"{gt_partition.numberOfSubsets() community detected}")
+res["numberOfCom" + evalname] = gt_partition.numberOfSubsets()
+print(f"{gt_partition.numberOfSubsets()} community detected")
 
 # Classic method
 print("__CLASSIC_METHODS__")
@@ -43,7 +39,7 @@ for evalname, fdetection in classic_methods:
     print(f"__{evalname}__")
     detected = fdetection(G)
     res["numberOfCom" + evalname] = detected.numberOfSubsets()
-    print(f"{gt_partition.numberOfSubsets() community detected}")
+    print(f"{gt_partition.numberOfSubsets()} community detected")
     NMI = nk.community.NMIDistance().getDissimilarity(G, gt_partition, detected)
     print(f"NMI:{NMI}")
     res["NMI" + evalname] = NMI
@@ -61,7 +57,7 @@ for normname, functor in norma.items():
         print(f"__{evalname}__")
         detected = fdetection(G)
         res["numberOfCom" + evalname] = detected.numberOfSubsets()
-        print(f"{gt_partition.numberOfSubsets() community detected}")
+        print(f"{gt_partition.numberOfSubsets()} community detected")
         NMI = nk.community.NMIDistance().getDissimilarity(G, gt_partition, detected)
         print(f"NMI:{NMI}")
         res["NMI" + evalname] = NMI
@@ -69,5 +65,5 @@ for normname, functor in norma.items():
         print(f"ARM:{ARM}")
         res["ARM" + evalname] = ARM
 
-with open(os.path.join(path, "xp1.pickle")):
+with open(os.path.join(path, "xp1.pickle"), "wb") as file:
     pickle.dump(res, file)
