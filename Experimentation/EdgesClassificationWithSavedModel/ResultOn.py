@@ -1,11 +1,9 @@
 import argparse
 import os
 import pickle
-from sklearn.model_selection import train_test_split
 from sklearn import metrics
 import networkit as nk
 import numpy as np
-import xgboost as xgb
 # %%
 
 argparser = argparse.ArgumentParser()
@@ -13,7 +11,10 @@ argparser.add_argument("path", help="Directory with network and community", type
 args = argparser.parse_args()
 path = args.path
 # %%
-# path = "/home/vconnes/WeightedCommunityDetection/lfr_5000/mk100/k20/muw0.4/4/"
+refs = [file.path for file in os.scandir("reference_model")]
+# %%
+# path = "/home/vconnes/WeightedCommunityDetection/lfr_5000/mk100/k20/muw0.4/5/"
+
 print("__LOADINGS__")
 # loading of graph
 G = nk.graphio.readGraph(os.path.join(path, "network.dat"), weighted=True, fileformat=nk.Format.EdgeListTabOne)
@@ -35,7 +36,7 @@ gt_partition = nk.community.readCommunities(os.path.join(path, "community.dat"),
 nk.community.inspectCommunities(gt_partition, G)
 res["numberOfCom" + evalname] = gt_partition.numberOfSubsets()
 print(f"{gt_partition.numberOfSubsets()} community detected")
-
+# loading of model
 edges = G.edges()
 deg_min = []
 deg_max = []
@@ -64,30 +65,28 @@ X = np.array([deg_min, deg_max, clust_min, clust_max, weight])
 Y = inside
 X = X.transpose()
 samples, features = X.shape
-print(f"{features} features on {samples} samples")
 
-X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=.2,
-                                                    random_state=0)
-print(f"Trainning set:{len(X_train)} samples")
-print(f"Testing set:{len(X_test)} samples")
+# %%
+refres = {}
+for i, ref in enumerate(refs):
+    with open(ref, "rb") as model:
+        gbm = pickle.load(model)
+    print(f"[{i+1}/{len(refs)}]: {ref}")
+    predictions = gbm.predict(X)
+    print(metrics.classification_report(Y, predictions))
+    mat = metrics.confusion_matrix(Y, predictions)
+    print("Confusion matrix:")
+    print(mat)
+    prec, rec, fmeasure, support = metrics.precision_recall_fscore_support(Y, predictions)
+    print("Importance of features:")
+    weights = gbm.feature_importances_
+    print(weights)
 
-gbm = xgb.XGBClassifier(max_depth=3, n_estimators=300, learning_rate=0.05).fit(X_train, Y_train)
-predictions = gbm.predict(X_test)
+    res = dict(target=["outside", "inside"],
+               precision=prec, recall=rec, f1=fmeasure, support=support,
+               confmat=mat,
+               features=["deg_min", "deg_max", "clust_min", "clust_max", "weight"], weights=weights)
+    refres[ref] = res
 # %%
-# with open(os.path.join(path, "reference_model.dat"), "wb") as file:
-#     pickle.dump(gbm, file)
-# %%
-print(metrics.classification_report(Y_test, predictions))
-mat = metrics.confusion_matrix(Y_test, predictions)
-print("Confusion matrix:")
-print(mat)
-prec, rec, fmeasure, support = metrics.precision_recall_fscore_support(Y_test, predictions)
-print("Importance of features:")
-weights = gbm.feature_importances_
-print(weights)
-
-res = dict(target=["outside", "inside"], precision=prec, recall=rec, f1=fmeasure, support=support, confmat=mat,
-           features=["deg_min", "deg_max", "clust_min", "clust_max", "weight"], weights=weights)
-# %%
-with open(os.path.join(path, "xp2.pickle"), "wb") as file:
-    pickle.dump(res, file)
+with open(os.path.join(path, "xp3.pickle"), "wb") as file:
+    pickle.dump(refres, file)
