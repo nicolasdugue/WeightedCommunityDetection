@@ -1,0 +1,39 @@
+__LOADINGS__
+Network Properties for:		network
+nodes, edges			5000, 56635
+directed?			False
+weighted?			True
+isolated nodes			0
+self-loops			0
+density				0.004532
+clustering coefficient		0.189019
+min/max/avg degree		6, 464, 22.654000
+degree assortativity		0.264216
+number of connected components	1
+size of largest component	5000 (100.00 %)
+488175.79734869
+__Groundtruth__
+read communities from: ../../lfr_5000/mk500/k20/muw0.2/2/community.dat
+-------------------  ----------
+# communities         46
+min community size     5
+max community size   472
+avg. community size  108.696
+modularity             0.275794
+-------------------  ----------
+46 community detected
+5 features on 56635 samples
+Trainning set:45308 samples
+Testing set:11327 samples
+             precision    recall  f1-score   support
+
+          0       0.93      0.92      0.93      8394
+          1       0.79      0.80      0.80      2933
+
+avg / total       0.89      0.89      0.89     11327
+
+Confusion matrix:
+[[7762  632]
+ [ 574 2359]]
+Importance of features:
+[0.2200102  0.19959162 0.19806023 0.18683001 0.19550791]

@@ -1,0 +1,402 @@
+__LOADINGS__
+Network Properties for:		network
+nodes, edges			5000, 31044
+directed?			False
+weighted?			True
+isolated nodes			1
+self-loops			0
+density				0.002484
+clustering coefficient		0.391590
+min/max/avg degree		0, 80, 12.417600
+degree assortativity		0.306274
+number of connected components	2
+size of largest component	4999 (99.98 %)
+164321.43546958535
+__Groundtruth__
+read communities from: ../../lfr_5000/mk100/k15/muw0.2/44/community.dat
+-------------------  ----------
+# communities        104
+min community size    20
+max community size    99
+avg. community size   48.0769
+modularity             0.800845
+-------------------  ----------
+104 community detected
+__CLASSIC_METHODS__
+__Louvain__
+PLM(balanced,pc,turbo) detected communities in 0.41850852966308594 [s]
+solution properties:
+-------------------  ----------
+# communities         66
+min community size     1
+max community size   159
+avg. community size   75.7576
+modularity             0.803192
+-------------------  ----------
+104 community detected
+NMI:0.05492678449884536
+ARM:0.19335064394311785
+__Singleton__
+104 community detected
+NMI:0.3047814955401733
+ARM:1.0
+__AllInOne__
+104 community detected
+NMI:1.0
+ARM:1.0
+__PLP__
+PLP detected communities in 0.13519525527954102 [s]
+solution properties:
+-------------------  ----------
+# communities        105
+min community size     1
+max community size   100
+avg. community size   47.619
+modularity             0.801988
+-------------------  ----------
+104 community detected
+NMI:0.007358036744590568
+ARM:0.015008076409860238
+__NORMALIZATION__
+__glove__
+Network Properties for:		G#21cc
+nodes, edges			4999, 31044
+directed?			False
+weighted?			True
+isolated nodes			0
+self-loops			0
+density				0.002485
+clustering coefficient		0.391669
+min/max/avg degree		2, 80, 12.420084
+degree assortativity		0.306274
+number of connected components	1
+size of largest component	4999 (100.00 %)
+tot:  3183.6892404816745
+__glove+Louvain__
+PLM(balanced,pc,turbo) detected communities in 0.4087338447570801 [s]
+solution properties:
+-------------------  ----------
+# communities         61
+min community size    32
+max community size   132
+avg. community size   81.9508
+modularity             0.811082
+-------------------  ----------
+104 community detected
+NMI:0.05711057806741893
+ARM:0.20521263091082198
+__glove+PLP__
+PLP detected communities in 0.10240983963012695 [s]
+solution properties:
+-------------------  ----------
+# communities        106
+min community size     9
+max community size   100
+avg. community size   47.1604
+modularity             0.809022
+-------------------  ----------
+104 community detected
+NMI:0.004966268501986781
+ARM:0.010513726938567336
+__fake_pmi__
+Network Properties for:		G#40cc
+nodes, edges			4999, 31044
+directed?			False
+weighted?			True
+isolated nodes			0
+self-loops			0
+density				0.002485
+clustering coefficient		0.391669
+min/max/avg degree		2, 80, 12.420084
+degree assortativity		0.306274
+number of connected components	1
+size of largest component	4999 (100.00 %)
+tot:  0.0
+__fake_pmi+Louvain__
+1 community detected due to total edge weight equal 0
+NMI:1
+ARM:0.010513726938567336
+__fake_pmi+PLP__
+1 community detected due to total edge weight equal 0
+NMI:1
+ARM:0.010513726938567336
+__iterative_rev_degree_order__
+Network Properties for:		G#53cc
+nodes, edges			4999, 31044
+directed?			False
+weighted?			True
+isolated nodes			0
+self-loops			0
+density				0.002485
+clustering coefficient		0.391669
+min/max/avg degree		2, 80, 12.420084
+degree assortativity		0.306274
+number of connected components	1
+size of largest component	4999 (100.00 %)
+tot:  1548.0427533339318
+__iterative_rev_degree_order+Louvain__
+PLM(balanced,pc,turbo) detected communities in 0.4660170078277588 [s]
+solution properties:
+-------------------  ----------
+# communities         53
+min community size    55
+max community size   148
+avg. community size   94.3208
+modularity             0.845472
+-------------------  ----------
+104 community detected
+NMI:0.4004684296279266
+ARM:0.7220635308334082
+__iterative_rev_degree_order+PLP__
+PLP detected communities in 0.09422612190246582 [s]
+solution properties:
+-------------------  ----------
+# communities        1427
+min community size      2
+max community size     12
+avg. community size     3.50315
+modularity              0.68191
+-------------------  ----------
+104 community detected
+NMI:0.304330044313219
+ARM:0.9386245475485357
+__pmi__
+Network Properties for:		G#78cc
+nodes, edges			4999, 31044
+directed?			False
+weighted?			True
+isolated nodes			0
+self-loops			0
+density				0.002485
+clustering coefficient		0.391669
+min/max/avg degree		2, 80, 12.420084
+degree assortativity		0.306274
+number of connected components	1
+size of largest component	4999 (100.00 %)
+tot:  182396.74786884442
+__pmi+Louvain__
+PLM(balanced,pc,turbo) detected communities in 0.36910033226013184 [s]
+solution properties:
+-------------------  ----------
+# communities         70
+min community size    39
+max community size   127
+avg. community size   71.4143
+modularity             0.820939
+-------------------  ----------
+104 community detected
+NMI:0.04029436792727337
+ARM:0.1385167244075175
+__pmi+PLP__
+PLP detected communities in 0.05937457084655762 [s]
+solution properties:
+-------------------  ----------
+# communities        106
+min community size     2
+max community size   100
+avg. community size   47.1604
+modularity             0.819853
+-------------------  ----------
+104 community detected
+NMI:0.0035760103553053035
+ARM:0.008172412216050029
+__standard__
+Network Properties for:		G#97cc
+nodes, edges			4999, 31044
+directed?			False
+weighted?			True
+isolated nodes			0
+self-loops			0
+density				0.002485
+clustering coefficient		0.391669
+min/max/avg degree		2, 80, 12.420084
+degree assortativity		0.306274
+number of connected components	1
+size of largest component	4999 (100.00 %)
+tot:  33.90761600365918
+__standard+Louvain__
+PLM(balanced,pc,turbo) detected communities in 0.6814661026000977 [s]
+solution properties:
+-------------------  ----------
+# communities         58
+min community size    25
+max community size   369
+avg. community size   86.1897
+modularity             0.853294
+-------------------  ----------
+104 community detected
+NMI:0.20760824787421894
+ARM:0.5446493412464211
+__standard+PLP__
+PLP detected communities in 0.11685919761657715 [s]
+solution properties:
+-------------------  ----------
+# communities        554
+min community size     1
+max community size    74
+avg. community size    9.02347
+modularity             0.713269
+-------------------  ----------
+104 community detected
+NMI:0.16922391146051352
+ARM:0.4036053530699545
+__ppmi__
+Network Properties for:		G#119cc
+nodes, edges			4999, 31044
+directed?			False
+weighted?			True
+isolated nodes			0
+self-loops			0
+density				0.002485
+clustering coefficient		0.391669
+min/max/avg degree		2, 80, 12.420084
+degree assortativity		0.306274
+number of connected components	1
+size of largest component	4999 (100.00 %)
+tot:  187000.93710105584
+__ppmi+Louvain__
+PLM(balanced,pc,turbo) detected communities in 0.512347936630249 [s]
+solution properties:
+-------------------  ----------
+# communities         64
+min community size    44
+max community size   123
+avg. community size   78.1094
+modularity             0.817239
+-------------------  ----------
+104 community detected
+NMI:0.04804316467261416
+ARM:0.17498100192903487
+__ppmi+PLP__
+PLP detected communities in 0.11126017570495605 [s]
+solution properties:
+-------------------  ----------
+# communities        106
+min community size     9
+max community size   100
+avg. community size   47.1604
+modularity             0.812181
+-------------------  ----------
+104 community detected
+NMI:0.0030706140380705182
+ARM:0.010720036806993294
+__glovexmax50alpha0.2__
+Network Properties for:		G#138cc
+nodes, edges			4999, 31044
+directed?			False
+weighted?			True
+isolated nodes			0
+self-loops			0
+density				0.002485
+clustering coefficient		0.391669
+min/max/avg degree		2, 80, 12.420084
+degree assortativity		0.306274
+number of connected components	1
+size of largest component	4999 (100.00 %)
+tot:  18136.795746897587
+__glovexmax50alpha0.2+Louvain__
+PLM(balanced,pc,turbo) detected communities in 0.301297664642334 [s]
+solution properties:
+-------------------  ----------
+# communities         68
+min community size    37
+max community size   127
+avg. community size   73.5147
+modularity             0.815854
+-------------------  ----------
+104 community detected
+NMI:0.04184344476879187
+ARM:0.15334290346652601
+__glovexmax50alpha0.2+PLP__
+PLP detected communities in 0.16808032989501953 [s]
+solution properties:
+-------------------  ----------
+# communities        105
+min community size    10
+max community size   100
+avg. community size   47.6095
+modularity             0.814645
+-------------------  ----------
+104 community detected
+NMI:0.0015408324457543143
+ARM:0.0035122753848911836
+__glovexmax40alpha0.2__
+Network Properties for:		G#157cc
+nodes, edges			4999, 31044
+directed?			False
+weighted?			True
+isolated nodes			0
+self-loops			0
+density				0.002485
+clustering coefficient		0.391669
+min/max/avg degree		2, 80, 12.420084
+degree assortativity		0.306274
+number of connected components	1
+size of largest component	4999 (100.00 %)
+tot:  18964.354840543925
+__glovexmax40alpha0.2+Louvain__
+PLM(balanced,pc,turbo) detected communities in 0.35502195358276367 [s]
+solution properties:
+-------------------  ----------
+# communities         65
+min community size    43
+max community size   127
+avg. community size   76.9077
+modularity             0.815668
+-------------------  ----------
+104 community detected
+NMI:0.04626111849582126
+ARM:0.16779346320473898
+__glovexmax40alpha0.2+PLP__
+PLP detected communities in 0.14593052864074707 [s]
+solution properties:
+-------------------  ----------
+# communities        105
+min community size    10
+max community size   100
+avg. community size   47.6095
+modularity             0.814647
+-------------------  ----------
+104 community detected
+NMI:0.0015408324457543143
+ARM:0.0035122753848911836
+__glovexmax30alpha0.3__
+Network Properties for:		G#176cc
+nodes, edges			4999, 31044
+directed?			False
+weighted?			True
+isolated nodes			0
+self-loops			0
+density				0.002485
+clustering coefficient		0.391669
+min/max/avg degree		2, 80, 12.420084
+degree assortativity		0.306274
+number of connected components	1
+size of largest component	4999 (100.00 %)
+tot:  16592.3187560347
+__glovexmax30alpha0.3+Louvain__
+PLM(balanced,pc,turbo) detected communities in 0.4656805992126465 [s]
+solution properties:
+-------------------  ----------
+# communities         65
+min community size    43
+max community size   133
+avg. community size   76.9077
+modularity             0.817576
+-------------------  ----------
+104 community detected
+NMI:0.04665096089450638
+ARM:0.16848048827232387
+__glovexmax30alpha0.3+PLP__
+PLP detected communities in 0.1312544345855713 [s]
+solution properties:
+-------------------  ---------
+# communities        105
+min community size    10
+max community size   100
+avg. community size   47.6095
+modularity             0.81647
+-------------------  ---------
+104 community detected
+NMI:0.002019701375520544
+ARM:0.004704575181783688
