@@ -22,16 +22,14 @@ classic_methods = [("Louvain", lambda G: nk.community.detectCommunities(G)),
 # %%
 
 
-def BCC(G):
-    name = G.getName()
-    cc = nk.components.ConnectedComponents(G)
-    cc.run()
-    iccmax = max(cc.getPartition().subsetSizeMap().items(), key=lambda x: x[1])[0]
-    Gc = G.subgraphFromNodes(cc.getPartition().getMembers(iccmax))
-    gmap = nk.graph.GraphTools.getContinuousNodeIds(Gc)
-    Gc = nk.graph.GraphTools.getCompactedGraph(Gc, gmap)
-    Gc.setName(name + "cc")
-    return Gc
+# def BCC(G):
+#     name = G.getName()
+#     cc = nk.components.ConnectedComponents(G)
+#     cc.run()
+#     iccmax = max(cc.getPartition().subsetSizeMap().items(), key=lambda x: x[1])[0]
+#     Gc = G.subgraphFromNodes(cc.getPartition().getMembers(iccmax))
+#     Gc.setName(name + "cc")
+#     return Gc
 
 
 # %%
@@ -44,15 +42,26 @@ print("__LOADINGS__")
 # loading of graph
 # path = "/home/vconnes/WeightedCommunityDetection/lfr_5000/mk100/k20/muw0.4/4/"
 loadG = nk.graphio.readGraph(os.path.join(path, "network.dat"), weighted=True, fileformat=nk.Format.EdgeListTabOne)
-removed = []
+
+# triatement of nul edge
+nnode, medge = loadG.numberOfNodes(), loadG.numberOfEdges()
+removedEdges = []
 for u, v in loadG.edges():
     if loadG.weight(u, v) == 0:
-        removed.append((u, v))
-res = dict(numberOfnodes=loadG.numberOfNodes(), numberOfEdges=loadG.numberOfEdges(),
-           percentOfNulWeight=len([1 for u, v in loadG.edges() if loadG.weight(u, v) == 0])/loadG.numberOfEdges())
-for (u, v) in removed:
+        removedEdges.append((u, v))
+for (u, v) in removedEdges:
     loadG.removeEdge(u, v)
+print(f"{len(removedEdges)}/{medge} {len(removedEdges)/medge*100} % of nul weighted edges removed")
+removedNodes = []
+for n in loadG.nodes():
+    if loadG.weightedDegree(n) == 0:
+        removedNodes.append(n)
+for n in removedNodes:
+    loadG.removeNode(n)
+print(f"{len(removedNodes)}/{nnode} {len(removedNodes)/nnode*100} % of nul degree nodes removed")
+# keeping BCC
 nk.overview(loadG)
+res = dict(numberOfnodes=loadG.numberOfNodes(), numberOfEdges=loadG.numberOfEdges(), nullEdges=len(removedEdges), nullNodes=len(removedNodes))
 tot = loadG.totalEdgeWeight()
 print(tot)
 # loading of communities
@@ -73,15 +82,15 @@ for evalname, fdetection in classic_methods:
     NMI = nk.community.NMIDistance().getDissimilarity(loadG, gt_partition, detected)
     print(f"NMI:{NMI}")
     res["NMI" + evalname] = NMI
-    ARM = nk.community.AdjustedRandMeasure().getDissimilarity(loadG, gt_partition, detected)
-    print(f"ARM:{ARM}")
-    res["ARM" + evalname] = ARM
+    ARI = nk.community.AdjustedRandMeasure().getDissimilarity(loadG, gt_partition, detected)
+    print(f"ARI:{ARI}")
+    res["ARI" + evalname] = ARI
 # %%
 # Normalization
 print("__NORMALIZATION__")
 for normname, functor in norma.items():
     print(f"__{normname}__")
-    Gn = BCC(functor(loadG))
+    Gn = functor(loadG)
     nk.overview(Gn)
     print("tot: ", Gn.totalEdgeWeight())
     assert tot == loadG.totalEdgeWeight()
@@ -91,21 +100,25 @@ for normname, functor in norma.items():
         if Gn.totalEdgeWeight() != 0:
             detected = fdetection(Gn)
             res["numberOfCom" + evalname] = detected.numberOfSubsets()
-            NMI = nk.community.NMIDistance().getDissimilarity(Gn, gt_partition, detected)
+            NMI = nk.community.NMIDistance().getDissimilarity(loadG, gt_partition, detected)
             print(f"{gt_partition.numberOfSubsets()} community detected")
             print(f"NMI:{NMI}")
             res["NMI" + evalname] = NMI
-            ARM = nk.community.AdjustedRandMeasure().getDissimilarity(Gn, gt_partition, detected)
-            print(f"ARM:{ARM}")
-            res["ARM" + evalname] = ARM
+            ARI = nk.community.AdjustedRandMeasure().getDissimilarity(loadG, gt_partition, detected)
+            print(f"ARI:{ARI}")
+            res["ARI" + evalname] = ARI
         else:
             ARI, NMI = 1, 1
             print(f"1 community detected due to total edge weight equal 0")
             print(f"NMI:{NMI}")
-            print(f"ARM:{ARM}")
+            print(f"ARI:{ARI}")
             res["numberOfCom" + evalname] = 1
             res["NMI" + evalname] = NMI
-            res["ARM" + evalname] = ARM
+            res["ARI" + evalname] = ARI
 
+print("NMI classement:")
+print(sorted([(k, v) for k, v in res.items() if "NMI" in k], key=lambda x: x[1]))
+print("ARI classement:")
+print(sorted([(k, v) for k, v in res.items() if "ARI" in k], key=lambda x: x[1]))
 with open(os.path.join(path, "xp1.pickle"), "wb") as file:
     pickle.dump(res, file)

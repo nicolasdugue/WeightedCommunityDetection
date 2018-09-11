@@ -1,6 +1,8 @@
 import os
 import pickle
 import numpy as np
+import matplotlib.pyplot as plt
+# %%
 
 list_graph = []
 mk = {}
@@ -43,29 +45,55 @@ for path in list_graph:
         # print(e)
         continue
 print(f"fail: {failled}/{len(list_graph)}")
-for p in reslabel:
-    if p == "target" or p == "features":
-        print(f"{p}:{ldict[0][p]}")
-    else:
-        print(f"{p}:{np.mean([d[p] for d in ldict if d], axis=0)}")
 # %%
-print("__Result__")
-for meta_param, meta_param_name in zip([mu], ["mu"]):
-    print(f"__Influence of {meta_param_name}__")
-    failled, ldict = 0, []
-    for valmk, gids in meta_param.items():
-        print(f"{meta_param_name}={valmk}")
-        for gid in gids:
-            try:
-                with open(os.path.join(list_graph[gid], "xp2.pickle"), "rb") as file:
-                    ldict.append(pickle.load(file))
-            except FileNotFoundError as e:
-                failled += 1
-                # print(e)
-                continue
-        print(f"fail: {failled}/{len(gids)}")
-        for p in ldict[0]:
-            if p == "target" or p == "features":
-                print(f"{p}:{ldict[0][p]}")
-            else:
-                print(f"{p}:{np.mean([d[p] for d in ldict if d], axis=0)}")
+
+def plotresult(ldict):
+    Y = [[], []]
+    Yerr = [[], []]
+    target = ldict[0]["target"]
+    Xlabel = []
+    for p in reslabel:
+        if p == "target" or p == "features":
+            print(f"{p}:{ldict[0][p]}")
+        else:
+            X = [d[p] for d in ldict if d]
+            Xmean = np.mean(X, axis=0)
+            Xstd = np.std(X, axis=0)
+            print(f"{p}:{Xmean}")
+        if any(k == p for k in ["precision", "recall", "f1", "support"]):
+            if p == "support":
+                weights = np.mean(X, axis=0)
+                X = X / sum(Xmean)
+                Xmean = np.mean(X, axis=0)
+                Xstd = np.std(X, axis=0)
+            Y[0].append(Xmean[0])
+            Y[1].append(Xmean[1])
+            Yerr[0].append(Xstd[0])
+            Yerr[1].append(Xstd[1])
+            Xlabel.append(p)
+
+    plt.figure(figsize=(7, 5))
+    pos = [0, 0.35, 1, 1.35, 2, 2.35, 2.70, 2.70+1-0.5, 2.70+1-0.35+0.35]
+    pos = np.arange(len(Y[1]))
+    plt.bar(pos, Y[0], 0.35, yerr=Yerr[0], label=target[0])
+
+    pos = np.arange(len(Y[1])) + 0.35
+    plt.bar(pos, Y[1], 0.35, yerr=Yerr[1], label=target[1])
+
+    pos = (np.arange(len(Y[1])) + 0.35/2)
+    plt.bar(pos, np.average([Y[0], Y[1]], axis=0, weights=weights), 0.10,
+            # yerr=np.average([Yerr[0], Yerr[1]], axis=0, weights=weights),
+            label="Weighted average", color="red")
+    plt.bar(pos, np.average([Y[0], Y[1]], axis=0), 0.10,
+            # yerr=np.average([Yerr[0], Yerr[1]], axis=0),
+            label="Average", color="green")
+    plt.xticks(np.arange(len(Xlabel)) + 0.35/2, Xlabel)
+    plt.legend(loc="upper left")
+# %%
+plotresult(ldict)
+# %%
+plotresult([ldict[i] for i in mu["muw0.4"]])
+# %%
+plotresult([ldict[i] for i in mu["muw0.3"]])
+# %%
+plotresult([ldict[i] for i in mu["muw0.2"]])
