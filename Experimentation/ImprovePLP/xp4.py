@@ -82,6 +82,7 @@ clust_min = []
 clust_max = []
 weight = []
 inside = []
+deg_moyn_min, deg_moyn_max = [], []
 cc = nk.centrality.LocalClusteringCoefficient(G).run().scores()
 
 for (u, v) in edges:
@@ -93,6 +94,9 @@ for (u, v) in edges:
     clust_min.append(min(clustU, clustV))
     clust_max.append(max(clustU, clustV))
     weight.append(G.weight(u, v))
+    minnode, maxnode = sorted([u, v], key=G.weightedDegree)
+    deg_moyn_min.append(np.mean([G.weightedDegree(n) for n in G.neighbors(minnode)]))
+    deg_moyn_max.append(np.mean([G.weightedDegree(n) for n in G.neighbors(maxnode)]))
 
     if gt_partition.subsetOf(u) == gt_partition.subsetOf(v):
         inside.append(1)
@@ -101,13 +105,14 @@ for (u, v) in edges:
 
 target = ["outside", "inside"]
 features = ["deg_min", "deg_max", "clust_min", "clust_max", "weight"]
+features += ["deg_moyn_min", "deg_moyn_max" ]
 X = np.array([deg_min, deg_max, clust_min, clust_max, weight])
 Y = inside
 X = X.transpose()
 samples, features = X.shape
 print(f"{features} features on {samples} samples")
 # %%
-gbm = xgb.XGBClassifier(max_depth=3, n_estimators=300, learning_rate=0.05).fit(X, Y)
+gbm = xgb.XGBClassifier(max_depth=8, n_estimators=300, learning_rate=0.05).fit(X, Y)
 probapred = gbm.predict_proba(X)
 predictions = gbm.predict(X)
 print(metrics.classification_report(Y, predictions))

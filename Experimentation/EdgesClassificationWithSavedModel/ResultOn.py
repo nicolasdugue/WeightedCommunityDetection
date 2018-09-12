@@ -68,7 +68,7 @@ for (u, v) in edges:
 target = ["outside", "inside"]
 features = ["deg_min", "deg_max", "clust_min", "clust_max", "weight"]
 features += ["deg_moyn_min", "deg_moyn_max" ]
-X = np.array([deg_min, deg_max, clust_min, clust_max, weight])
+X = np.array([deg_min, deg_max, clust_min, clust_max, weight, deg_moyn_min, deg_moyn_max])
 Y = inside
 X = X.transpose()
 samples, features = X.shape
