@@ -73,7 +73,7 @@ X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=.2,
 print(f"Trainning set:{len(X_train)} samples")
 print(f"Testing set:{len(X_test)} samples")
 
-gbm = xgb.XGBClassifier(max_depth=3, n_estimators=300, learning_rate=0.05).fit(X_train, Y_train)
+gbm = xgb.XGBClassifier(max_depth=8, n_estimators=300, learning_rate=0.05).fit(X_train, Y_train)
 predictions = gbm.predict(X_test)
 
 # %%
