@@ -26,7 +26,7 @@ print(f"mising: {len(list_graph)}/{nb_graph}")
 # %%
 for path in list_graph:
     try:
-        with open(os.path.join(path, "xp2.pickle"), "rb") as file:
+        with open(os.path.join(path, "xp2_7.pickle"), "rb") as file:
             reslabel = list(pickle.load(file).keys())
     except FileNotFoundError as e:
         # print(e)
@@ -37,7 +37,7 @@ print(reslabel)
 failled, ldict = 0, []
 for path in list_graph:
     try:
-        with open(os.path.join(path, "xp2.pickle"), "rb") as file:
+        with open(os.path.join(path, "xp2_7.pickle"), "rb") as file:
             ldict.append(pickle.load(file))
     except FileNotFoundError as e:
         failled += 1

@@ -163,5 +163,5 @@ res = dict(target=target, precision=prec, recall=rec, f1=fmeasure, support=suppo
 #
 # plt.savefig(f"precrec.pdf")
 # %%
-with open(os.path.join(path, "xp2.pickle"), "wb") as file:
+with open(os.path.join(path, "xp2_7.pickle"), "wb") as file:
     pickle.dump(res, file)

@@ -10,7 +10,7 @@ list_graph = []
 mk = {}
 k = {}
 mu = {}
-pattern = re.compile(r".*reference_model/mk(\d+)k(\d+)muw(\d+(?:\.\d+)?)\.model(\d+)\.dat$")
+pattern = re.compile(r".*reference_model_7/mk(\d+)k(\d+)muw(\d+(?:\.\d+)?)\.model(\d+)\.dat$")
 nb_graph, gid = 0, 0
 for (dirpath, dirnames, filenames) in os.walk("../../lfr_5000"):
     if filenames:
@@ -28,7 +28,7 @@ print(f"mising: {len(list_graph)}/{nb_graph}")
 # %%
 for path in list_graph:
     try:
-        with open(os.path.join(path, "xp3.pickle"), "rb") as file:
+        with open(os.path.join(path, "xp3_7.pickle"), "rb") as file:
             reslabel = list(list(pickle.load(file).values())[0].keys())
     except FileNotFoundError as e:
         # print(e)
@@ -39,7 +39,7 @@ for path in list_graph:
 failled, ldict = 0, []
 for path in list_graph:
     try:
-        with open(os.path.join(path, "xp3.pickle"), "rb") as file:
+        with open(os.path.join(path, "xp3_7.pickle"), "rb") as file:
             ldict.append(pickle.load(file))
     except FileNotFoundError as e:
         failled += 1
