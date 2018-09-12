@@ -85,7 +85,7 @@ for i, path in enumerate(ref):
     samples, features = X.shape
     print(f"{features} features on {samples} samples")
 
-    gbm = xgb.XGBClassifier(max_depth=8, n_estimators=300, learning_rate=0.05).fit(X, Y)
+    gbm = xgb.XGBClassifier(max_depth=3, n_estimators=300, learning_rate=0.05).fit(X, Y)
     with open(os.path.join("reference_model", f"mk{curmk}k{curk}muw{curmuw}.model{i}.dat"), "wb") as file:
         pickle.dump(gbm, file)
     # %%

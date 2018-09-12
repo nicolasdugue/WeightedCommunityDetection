@@ -44,7 +44,7 @@ deg_max = []
 clust_min = []
 clust_max = []
 weight = []
-deg_moyn_min, deg_moyn_max = [], []
+# deg_moyn_min, deg_moyn_max = [], []
 inside = []
 
 for (u, v) in edges:
