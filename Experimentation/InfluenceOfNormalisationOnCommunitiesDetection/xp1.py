@@ -80,12 +80,13 @@ for keyname, paramkey in paramkeys:
         mean=np.mean(matres[paramkey, reslabel.index(k) + 3][~np.isnan(matres[paramkey, reslabel.index(k) + 3])]),
         std=np.std(matres[paramkey, reslabel.index(k) + 3][~np.isnan(matres[paramkey, reslabel.index(k) + 3])]),
         samples=len(matres[paramkey, reslabel.index(k) + 3][~np.isnan(matres[paramkey, reslabel.index(k) + 3])]))
-                            for k in reslabel if "NMI" in k], key=lambda x: x["mean"])
+                            for k in reslabel if "NMI" in k], key=lambda x: x["mean"],
+                           reverse=True)
     print("ARI classement ", keyname, ":")
-    for i, d in enumerate(ARIClassement):
+    for i, d in enumerate(ARIClassement[0:5]):
         print(i + 1, ": ", d)
     print("NMI classement ", keyname, ":")
-    for i, d in enumerate(NMIClassement):
+    for i, d in enumerate(NMIClassement[0:5]):
         print(i + 1, ": ", d)
 
 # %%
@@ -148,4 +149,4 @@ for i, param in enumerate(filter(lambda x: "ARIglove" in x, reslabel)):
 
 plt.xticks(Xmu)
 plt.legend(bbox_to_anchor=(0.25, 1.75), loc=1, borderaxespad=0)
-plt.show()
+plt.savefig(f"GloveMuImpact.pdf")
