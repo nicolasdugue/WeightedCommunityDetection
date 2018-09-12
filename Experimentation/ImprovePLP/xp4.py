@@ -1,3 +1,7 @@
+from functools import partial
+import sys
+sys.path.append("../InfluenceOfNormalisationOnCommunitiesDetection")
+from  new_normalization import glove
 import argparse
 import os
 import pickle
@@ -6,6 +10,8 @@ from sklearn import metrics
 import networkit as nk
 import numpy as np
 import xgboost as xgb
+import random
+import collections
 # %%
 
 argparser = argparse.ArgumentParser()
@@ -13,7 +19,7 @@ argparser.add_argument("path", help="Directory with network and community", type
 args = argparser.parse_args()
 path = args.path
 # %%
-# path = "/home/vconnes/WeightedCommunityDetection/lfr_5000/mk100/k20/muw0.4/4/"
+path = "/home/vconnes/WeightedCommunityDetection/lfr_5000/mk100/k20/muw0.4/4/"
 print("__LOADINGS__")
 # loading of graph
 G = nk.graphio.readGraph(os.path.join(path, "network.dat"), weighted=True, fileformat=nk.Format.EdgeListTabOne)
@@ -28,14 +34,47 @@ for (u, v) in removed:
 nk.overview(G)
 tot = G.totalEdgeWeight()
 print(tot)
+
 # loading of communities
-evalname = "Groundtruth"
-print(f"__{evalname}__")
+res = {}
 gt_partition = nk.community.readCommunities(os.path.join(path, "community.dat"), format="edgelist-t1")
 nk.community.inspectCommunities(gt_partition, G)
-res["numberOfCom" + evalname] = gt_partition.numberOfSubsets()
+res["numberOfComGroundtruth"] = gt_partition.numberOfSubsets()
 print(f"{gt_partition.numberOfSubsets()} community detected")
 
+# %%
+norma = dict()
+# norma["glovexmax50alpha0.2"] = partial(glove, xmax=50, alpha=float(0.2))
+# norma["glovexmax40alpha0.2"] = partial(glove, xmax=40, alpha=float(0.2))
+norma["glovexmax30alpha0.3"] = partial(glove, xmax=30, alpha=float(0.3))
+detector = lambda G: nk.community.detectCommunities(G, nk.community.PLP(G))
+
+# %%
+detected = detector(G)
+res["numberOfComPLP"] = detected.numberOfSubsets()
+NMI = nk.community.NMIDistance().getDissimilarity(G, gt_partition, detected)
+print(f"{gt_partition.numberOfSubsets()} community detected")
+print(f"NMI:{NMI}")
+res["NMIPLP"] = NMI
+ARI = nk.community.AdjustedRandMeasure().getDissimilarity(G, gt_partition, detected)
+res["ARIPLP"] = ARI
+print(f"ARI:{ARI}")
+# %%
+for name, norm in norma.items():
+    print(name, "\n")
+    Gn = norm(G)
+    # nk.overview(Gn)
+    detected = detector(Gn)
+    res["numberOfComPLP"] = detected.numberOfSubsets()
+    NMI = nk.community.NMIDistance().getDissimilarity(G, gt_partition, detected)
+    print(f"{gt_partition.numberOfSubsets()} community detected")
+    print(f"NMI:{NMI}")
+    res["NMIPLP"] = NMI
+    ARI = nk.community.AdjustedRandMeasure().getDissimilarity(G, gt_partition, detected)
+    res["ARIPLP"] = ARI
+    print(f"ARI:{ARI}\n")
+
+# %%
 edges = G.edges()
 deg_min = []
 deg_max = []
@@ -67,9 +106,66 @@ Y = inside
 X = X.transpose()
 samples, features = X.shape
 print(f"{features} features on {samples} samples")
-
-print(f"Trainning set:{len(X_train)} samples")
-print(f"Testing set:{len(X_test)} samples")
-
+# %%
 gbm = xgb.XGBClassifier(max_depth=3, n_estimators=300, learning_rate=0.05).fit(X, Y)
-predictions = gbm.predict_proba(X_test)
+probapred = gbm.predict_proba(X)
+predictions = gbm.predict(X)
+print(metrics.classification_report(Y, predictions))
+# %%
+inter = dict()
+intra = dict()
+for node in G.nodes():
+    inter[node] = []
+    intra[node] = []
+cpt = 0
+for (u, v) in edges:
+    if predictions[cpt][1] > 0.7:
+        inter[u].append(v)
+        inter[v].append(u)
+    if predictions[cpt][0] > 0.7:
+        intra[u].append(v)
+        intra[v].append(u)
+    cpt += 1
+
+# %%
+
+def PLP(G, inter, intra):
+    dicoLabels = dict()
+    nbIter = 0
+
+    nodes = G.nodes()
+    cpt = 0
+    for n in nodes:
+        if n not in dicoLabels:
+            dicoLabels[n] = cpt
+            voisins = intra[n]
+            for v in voisins:
+                dicoLabels[n] = cpt
+            cpt += 1
+    change = True
+    while change:
+        dicoNew = dict()
+        ordre = list(range(len(nodes)))
+        random.shuffle(ordre)
+        for n in ordre:
+            voisins = set(G.neighbors(n))
+            not_voisins= set(inter[n])
+            voisins = voisins.difference(not_voisins)
+            if (len(voisins) > 0):
+                labels = [dicoLabels[v] for v in voisins]
+                c = collections.Counter(labels)
+                old_label_count = c[dicoLabels[n]]
+                label = c.most_common(1)[0][0]
+                if label != dicoLabels[n] and c.most_common(1)[0][1] > old_label_count:
+                    dicoNew[n] = label
+                    #voisins=intra[n]
+                    #for v in voisins:
+                    #    dicoNew[v]=label
+        for d in dicoNew:
+            dicoLabels[d] = dicoNew[d]
+        changement = len(dicoNew)
+        nbIter += 1
+        print("Nb de changements", changement)
+        if (nbIter > 100):
+            change = False
+    return dicoLabels
