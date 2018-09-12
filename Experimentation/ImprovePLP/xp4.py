@@ -106,7 +106,7 @@ for (u, v) in edges:
 target = ["outside", "inside"]
 features = ["deg_min", "deg_max", "clust_min", "clust_max", "weight"]
 features += ["deg_moyn_min", "deg_moyn_max" ]
-X = np.array([deg_min, deg_max, clust_min, clust_max, weight])
+X = np.array([deg_min, deg_max, clust_min, clust_max, weight, deg_moyn_min, deg_moyn_max])
 Y = inside
 X = X.transpose()
 samples, features = X.shape
@@ -133,6 +133,30 @@ for (u, v) in edges:
     cpt += 1
 
 # %%
+def PLP(G):
+    dicoLabels, nbIter, nodes = dict(), 0,  G.nodes()
+    # We start with the partiton induced by the classifier
+    dicoLabels = {n:i for i, n in enumerate(nodes)}
+
+    change = True
+    while change:
+        ordre = list(range(len(nodes)))
+        random.shuffle(ordre)
+        for n in ordre:
+            voisins = set(G.neighbors(n))
+            labels = [dicoLabels[v] for v in voisins]
+            c = collections.Counter(labels)
+            old_label_count = c[dicoLabels[n]]
+            newlabel, newcount = c.most_common(1)[0]
+            nb_change = 0
+            if newlabel != dicoLabels[n] and newcount > old_label_count:
+                dicoLabels[n] = newlabel
+                nb_change += 1
+            print("Nb de changements", nb_change)
+            if nb_change == 0 or nbIter > 100:
+                change = False
+    continousCid = {c, i for i, c in enumerate(sorted(list(set(dicoLabels.values()))))}
+    return nk.community.Partition(len(nodes),[[continousCid[dicoLabels[n]] for n in sorted(dicoLabels)]])
 
 def PLP(G, inter, intra):
     dicoLabels = dict()

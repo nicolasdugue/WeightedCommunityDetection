@@ -11,7 +11,7 @@ argparser.add_argument("path", help="Directory with network and community", type
 args = argparser.parse_args()
 path = args.path
 # %%
-refs = [file.path for file in os.scandir("reference_model")]
+refs = [file.path for file in os.scandir("reference_model_7")]
 # %%
 # path = "/home/vconnes/WeightedCommunityDetection/lfr_5000/mk100/k20/muw0.4/5/"
 
