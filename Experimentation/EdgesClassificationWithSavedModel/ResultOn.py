@@ -42,6 +42,7 @@ deg_min = []
 deg_max = []
 clust_min = []
 clust_max = []
+deg_moyn_min, deg_moyn_max = [], []
 weight = []
 inside = []
 cc = nk.centrality.LocalClusteringCoefficient(G).run().scores()
@@ -55,12 +56,18 @@ for (u, v) in edges:
     clust_min.append(min(clustU, clustV))
     clust_max.append(max(clustU, clustV))
     weight.append(G.weight(u, v))
+    minnode, maxnode = sorted([u, v], key=G.weightedDegree)
+    deg_moyn_min.append(np.mean([G.weightedDegree(n) for n in G.neighbors(minnode)]))
+    deg_moyn_max.append(np.mean([G.weightedDegree(n) for n in G.neighbors(maxnode)]))
 
     if gt_partition.subsetOf(u) == gt_partition.subsetOf(v):
         inside.append(1)
     else:
         inside.append(0)
 
+target = ["outside", "inside"]
+features = ["deg_min", "deg_max", "clust_min", "clust_max", "weight"]
+features += ["deg_moyn_min", "deg_moyn_max" ]
 X = np.array([deg_min, deg_max, clust_min, clust_max, weight])
 Y = inside
 X = X.transpose()
@@ -81,11 +88,9 @@ for i, ref in enumerate(refs):
     print("Importance of features:")
     weights = gbm.feature_importances_
     print(weights)
+    res = dict(target=target, precision=prec, recall=rec, f1=fmeasure, support=support, confmat=mat,
+               features=features, weights=weights)
 
-    res = dict(target=["outside", "inside"],
-               precision=prec, recall=rec, f1=fmeasure, support=support,
-               confmat=mat,
-               features=["deg_min", "deg_max", "clust_min", "clust_max", "weight"], weights=weights)
     refres[ref] = res
 # %%
 with open(os.path.join(path, "xp3.pickle"), "wb") as file:

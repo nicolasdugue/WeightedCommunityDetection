@@ -44,7 +44,7 @@ deg_max = []
 clust_min = []
 clust_max = []
 weight = []
-# deg_moyn_min, deg_moyn_max = [], []
+deg_moyn_min, deg_moyn_max = [], []
 inside = []
 
 for (u, v) in edges:
@@ -57,8 +57,8 @@ for (u, v) in edges:
     clust_max.append(max(clustU, clustV))
     weight.append(G.weight(u, v))
     minnode, maxnode = sorted([u, v], key=G.weightedDegree)
-    # deg_moyn_min.append(np.mean([G.weightedDegree(n) for n in G.neighbors(minnode)]))
-    # deg_moyn_max.append(np.mean([G.weightedDegree(n) for n in G.neighbors(maxnode)]))
+    deg_moyn_min.append(np.mean([G.weightedDegree(n) for n in G.neighbors(minnode)]))
+    deg_moyn_max.append(np.mean([G.weightedDegree(n) for n in G.neighbors(maxnode)]))
 
     if gt_partition.subsetOf(u) == gt_partition.subsetOf(v):
         inside.append(1)
@@ -67,9 +67,9 @@ for (u, v) in edges:
 
 target = ["outside", "inside"]
 features = ["deg_min", "deg_max", "clust_min", "clust_max", "weight"]
-# features += ["deg_moyn_min", "deg_moyn_max" ]
+features += ["deg_moyn_min", "deg_moyn_max" ]
 X = np.array([deg_min, deg_max, clust_min, clust_max, weight
-              # , deg_moyn_min, deg_moyn_max
+              , deg_moyn_min, deg_moyn_max
               ])
 Y = inside
 X = X.transpose()
@@ -81,12 +81,8 @@ X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=.2,
 print(f"Trainning set:{len(X_train)} samples")
 print(f"Testing set:{len(X_test)} samples")
 
-<<<<<<< HEAD
-gbm = xgb.XGBClassifier(max_depth=8, n_estimators=300, learning_rate=0.05).fit(X_train, Y_train)
-=======
 # %%
-gbm = xgb.XGBClassifier(max_depth=3, n_estimators=300, learning_rate=0.05).fit(X_train, Y_train)
->>>>>>> 68d954114ec6182f2d51b887d1d87f65e85a9711
+gbm = xgb.XGBClassifier(max_depth=8, n_estimators=300, learning_rate=0.05).fit(X_train, Y_train)
 predictions = gbm.predict(X_test)
 
 
