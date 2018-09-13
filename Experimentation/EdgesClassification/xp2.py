@@ -1,52 +1,15 @@
+import sys
+sys.path.append("../Toolbox")
 import os
 import pickle
 import numpy as np
 import matplotlib.pyplot as plt
+from Utils import architecture
 # %%
 
-list_graph = []
-mk = {}
-k = {}
-mu = {}
-
-nb_graph, gid = 0, 0
-for (dirpath, dirnames, filenames) in os.walk("../../lfr_5000"):
-    if filenames:
-        nb_graph += 1
-    if "network.dat" in filenames and "community.dat" in filenames:
-        list_graph.append(dirpath)
-        dirpath, param = os.path.split(os.path.split(dirpath)[0])
-        mu[param] = mu.get(param, []) + [gid]
-        dirpath, param = os.path.split(dirpath)
-        k[param] = k.get(param, []) + [gid]
-        dirpath, param = os.path.split(dirpath)
-        mk[param] = mk.get(param, []) + [gid]
-        gid += 1
-print(f"mising: {len(list_graph)}/{nb_graph}")
-# %%
-for path in list_graph:
-    try:
-        with open(os.path.join(path, "xp2_7.pickle"), "rb") as file:
-            reslabel = list(pickle.load(file).keys())
-    except FileNotFoundError as e:
-        # print(e)
-        continue
-    break
+ldict, list_graph, mk, k, mu, reslabel = architecture("xp2_7.pickle")
 print(reslabel)
 # %%
-failled, ldict = 0, []
-for path in list_graph:
-    try:
-        with open(os.path.join(path, "xp2_7.pickle"), "rb") as file:
-            ldict.append(pickle.load(file))
-    except FileNotFoundError as e:
-        failled += 1
-        ldict.append(None)
-        # print(e)
-        continue
-print(f"fail: {failled}/{len(list_graph)}")
-# %%
-
 def plotresult(ldict):
     Y = [[], []]
     Yerr = [[], []]
@@ -89,6 +52,7 @@ def plotresult(ldict):
             label="Average", color="green")
     plt.xticks(np.arange(len(Xlabel)) + 0.35/2, Xlabel)
     plt.legend(loc="upper left")
+    plt.show()
 # %%
 plotresult(ldict)
 # %%

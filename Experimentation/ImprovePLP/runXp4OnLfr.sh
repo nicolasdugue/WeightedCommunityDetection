@@ -18,7 +18,7 @@ do
   Name=`expr match "$DIR" ".*/lfr_5000/\(mk[0-9]*/k[0-9]*/muw[0-9]*\.[0-9]*/[0-9]*\)$"`;
   echo $Name;
   srun -c 5  -J "$Name" -o $DIR"/XP4_7".log -e $DIR"/XP4_7".err --time 04-00 --mail-type=ALL --mail-user=victor.connes@gmail.com \
-      python3 ResultOn.py $DIR &
+      python3 ResultOn.py $DIR --addAssort &
   else
   echo "pass on $DIR";
 fi;

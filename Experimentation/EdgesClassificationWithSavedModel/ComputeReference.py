@@ -2,15 +2,19 @@ import os
 import pickle
 import random
 import re
-from sklearn.model_selection import train_test_split
-from sklearn import metrics
-import networkit as nk
-import numpy as np
+import argparse
+import sys
+sys.path.append("../Toolbox")
+from Utils import loadings, statNodes
 import xgboost as xgb
 # %%
-
+argparser = argparse.ArgumentParser()
+argparser.add_argument("--addAssort", help="If true assortativity features are used, default=True", action="store_true", default=False)
+args = argparser.parse_args()
+addAssort = args.addAssort
+print(addAssort)
+# %%
 list_graph = []
-
 nb_graph = 0
 for (dirpath, dirnames, filenames) in os.walk("../../lfr_5000"):
     if filenames:
@@ -44,66 +48,16 @@ pattern = re.compile(r".*lfr_5000/mk(\d+)/k(\d+)/muw(\d+(?:\.\d+)?)/\d+$")
 for i, path in enumerate(ref):
     print(path)
     curmk, curk, curmuw = pattern.match(path).groups()
-    print("__LOADINGS__")
-    # loading of graph
-    G = nk.graphio.readGraph(os.path.join(path, "network.dat"), weighted=True, fileformat=nk.Format.EdgeListTabOne)
-    removed = []
-    for u, v in G.edges():
-        if G.weight(u, v) == 0:
-            removed.append((u, v))
-    res = dict(numberOfnodes=G.numberOfNodes(), numberOfEdges=G.numberOfEdges(),
-               percentOfNulWeight=len([1 for u, v in G.edges() if G.weight(u, v) == 0])/G.numberOfEdges())
-    for (u, v) in removed:
-        G.removeEdge(u, v)
-    nk.overview(G)
-    tot = G.totalEdgeWeight()
-    print(tot)
-    # loading of communities
-    evalname = "Groundtruth"
-    print(f"__{evalname}__")
-    gt_partition = nk.community.readCommunities(os.path.join(path, "community.dat"), format="edgelist-t1")
-    nk.community.inspectCommunities(gt_partition, G)
-    res["numberOfCom" + evalname] = gt_partition.numberOfSubsets()
-    print(f"{gt_partition.numberOfSubsets()} community detected")
+    G, gt_partition, _ = loadings(path)
 
     edges = G.edges()
-    deg_min = []
-    deg_max = []
-    clust_min = []
-    clust_max = []
-    deg_moyn_min, deg_moyn_max = [], []
-    weight = []
-    inside = []
-    cc = nk.centrality.LocalClusteringCoefficient(G).run().scores()
-
-    for (u, v) in edges:
-        degU, degV = G.weightedDegree(u), G.weightedDegree(v)
-        clustU, clustV = cc[u], cc[v]
-
-        deg_min.append(min(degU, degV))
-        deg_max.append(max(degU, degV))
-        clust_min.append(min(clustU, clustV))
-        clust_max.append(max(clustU, clustV))
-        weight.append(G.weight(u, v))
-        minnode, maxnode = sorted([u, v], key=G.weightedDegree)
-        deg_moyn_min.append(np.mean([G.weightedDegree(n) for n in G.neighbors(minnode)]))
-        deg_moyn_max.append(np.mean([G.weightedDegree(n) for n in G.neighbors(maxnode)]))
-
-
-        if gt_partition.subsetOf(u) == gt_partition.subsetOf(v):
-            inside.append(1)
-        else:
-            inside.append(0)
-
-    X = np.array([deg_min, deg_max, clust_min, clust_max, weight
-                  , deg_moyn_min, deg_moyn_max
-                  ])
-    Y = inside
-    X = X.transpose()
-    samples, features = X.shape
-    print(f"{features} features on {samples} samples")
-
-    gbm = xgb.XGBClassifier(max_depth=8, n_estimators=300, learning_rate=0.05).fit(X, Y)
-    with open(os.path.join("reference_model_7", f"mk{curmk}k{curk}muw{curmuw}.model{i}.dat"), "wb") as file:
-        pickle.dump(gbm, file)
+    X, Y, target, features = statNodes(G, gt_partition, edges, addAssort=addAssort)
+    if addAssort:
+        gbm = xgb.XGBClassifier(max_depth=8, n_estimators=300, learning_rate=0.05).fit(X, Y)
+        with open(os.path.join("reference_model_7", f"mk{curmk}k{curk}muw{curmuw}.model{i}.dat"), "wb") as file:
+            pickle.dump(gbm, file)
+    else:
+        gbm = xgb.XGBClassifier(max_depth=3, n_estimators=300, learning_rate=0.05).fit(X, Y)
+        with open(os.path.join("reference_model", f"mk{curmk}k{curk}muw{curmuw}.model{i}.dat"), "wb") as file:
+            pickle.dump(gbm, file)
     # %%
