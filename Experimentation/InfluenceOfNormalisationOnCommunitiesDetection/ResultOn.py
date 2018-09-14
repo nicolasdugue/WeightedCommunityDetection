@@ -3,6 +3,8 @@ import argparse
 import networkit as nk
 import os
 import pickle
+import sys
+sys.path.append("../Toolbox")
 from new_normalization import fake_pmi, glove, iterative_rev_degree_order, pmi, ppmi, standard
 from Utils import loadings, partitionRes
 path = "/home/vconnes/WeightedCommunityDetection/lfr_5000/mk100/k20/muw0.4/4/"

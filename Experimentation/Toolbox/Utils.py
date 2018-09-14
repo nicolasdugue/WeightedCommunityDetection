@@ -1,11 +1,54 @@
 import os
 import pickle
+import random
+import re
 import networkit as nk
 import numpy as np
 from sklearn import metrics
 
-def loadings(path):
-    print("__LOADINGS__")
+pattern = re.compile(r".*lfr_5000/(mk\d+)/(k\d+)/(muw\d+(?:\.\d+)?)/\d+$")
+patternRef = re.compile(r".*reference_model(?:_7)?/(mk\d+)(k\d+)(muw\d+(?:\.\d+)?)\.model\d+\.dat$")
+
+def extractParams(path):
+    if "reference_model" in path:
+        return patternRef.match(path).groups()
+    else:
+        return pattern.match(path).groups()
+
+def representativeSamples():
+    exec_path = os.path.split(os.path.realpath(__file__))[0]
+    list_graph = []
+    ban_paths =  [os.path.join(exec_path, "../../lfr_5000/mk100/k20/muw0.3/33/"),
+                 os.path.join(exec_path, "../../lfr_5000/mk100/k25/muw0.2/45/"),
+                 os.path.join(exec_path, "../../lfr_5000/mk100/k25/muw0.3/38/"),
+                 os.path.join(exec_path, "../../lfr_5000/mk100/k25/muw0.4/24/"),
+                 os.path.join(exec_path, "../../lfr_5000/mk300/k15/muw0.2/20/"),
+                 os.path.join(exec_path, "../../lfr_5000/mk300/k15/muw0.3/24/"),
+                 os.path.join(exec_path, "../../lfr_5000/mk300/k20/muw0.3/3/"),
+                 os.path.join(exec_path, "../../lfr_5000/mk300/k25/muw0.2/37/"),
+                 os.path.join(exec_path, "../../lfr_5000/mk500/k25/muw0.2/26/"),
+                 os.path.join(exec_path, "../../lfr_5000/mk500/k25/muw0.2/4/")]
+    for (dirpath, dirnames, filenames) in os.walk(os.path.join(exec_path, "../../lfr_5000")):
+        if "network.dat" in filenames and\
+           "community.dat" in filenames and\
+           all(not os.path.samefile(dirpath, ban_path) for ban_path in ban_paths):
+           list_graph.append(os.path.abspath(dirpath))
+
+    ref = random.sample(set(filter(lambda x: "/muw0.4/" in x, list_graph)), 10) + \
+          random.sample(set(filter(lambda x: "/muw0.2/" in x, list_graph)), 10) + \
+          random.sample(set(filter(lambda x: "/muw0.3/" in x, list_graph)), 10) + \
+          random.sample(set(filter(lambda x: "/k15/" in x, list_graph)), 10) + \
+          random.sample(set(filter(lambda x: "/k20/" in x, list_graph)), 10) + \
+          random.sample(set(filter(lambda x: "/k25/" in x, list_graph)), 10) + \
+          random.sample(set(filter(lambda x: "/mk300/" in x, list_graph)), 10) + \
+          random.sample(set(filter(lambda x: "/mk500/" in x, list_graph)), 10) + \
+          random.sample(set(filter(lambda x: "/mk100/" in x, list_graph)), 10)
+    return ref
+
+
+def loadings(path, verbose=True):
+    if verbose:
+        print("__LOADINGS__")
     # loading of graph
     G = nk.graphio.readGraph(os.path.join(path, "network.dat"), weighted=True, fileformat=nk.Format.EdgeListTabOne)
     # remove of nul edges and nul degree nodes
@@ -18,33 +61,38 @@ def loadings(path):
     for (u, v) in removed:
         G.removeEdge(u, v)
     # graph properties
-    nk.overview(G)
+    if verbose:
+        nk.overview(G)
 
     # loading of communities
     gt_partition = nk.community.readCommunities(os.path.join(path, "community.dat"), format="edgelist-t1")
     # communities properties
-    nk.community.inspectCommunities(gt_partition, G)
     res["numberOfComGroundtruth"] = gt_partition.numberOfSubsets()
-    print(f"{gt_partition.numberOfSubsets()} community detected")
+    if verbose:
+        nk.community.inspectCommunities(gt_partition, G)
+        print(f"{gt_partition.numberOfSubsets()} community detected")
     return G, gt_partition, res
 
 
-def partitionRes(G, gt_partition, detected, method, norm):
+def partitionRes(G, gt_partition, detected, method, norm, verbose=True):
     res = {}
-    print(f"__________\nNormalisation :{norm}\nMethod: {method}\n__________")
+    if verbose:
+        print(f"__________\nNormalisation :{norm}\nMethod: {method}\n__________")
     res[f"numberOfCom_{method}_{norm}"] = detected.numberOfSubsets()
     NMI = nk.community.NMIDistance().getDissimilarity(G, gt_partition, detected)
-    print(f"{gt_partition.numberOfSubsets()} community detected")
-    print(f"NMI:{NMI}")
+    if verbose:
+        print(f"{gt_partition.numberOfSubsets()} community detected")
+        print(f"NMI:{NMI}")
     res[f"NMI_{method}_{norm}"] = NMI
     ARI = nk.community.AdjustedRandMeasure().getDissimilarity(G, gt_partition, detected)
     res[f"ARI_{method}_{norm}"] = ARI
-    print(f"ARI:{ARI}\n")
-    print(f"__________")
+    if verbose:
+        print(f"ARI:{ARI}\n")
+        print(f"__________")
     return res
 
 
-def statNodes(G, gt_partition, edges, addAssort=True):
+def statNodes(G, gt_partition, edges, addAssort=True, verbose=True):
     deg_min = []
     deg_max = []
     clust_min = []
@@ -81,19 +129,23 @@ def statNodes(G, gt_partition, edges, addAssort=True):
     if addAssort:
         features += ["deg_moyn_min", "deg_moyn_max" ]
     # print(X.shape)
-    print("%d features on %d samples" % tuple(X.shape))
+    if verbose:
+        print("%d features on %d samples" % tuple(X.shape))
     return X, Y, target, features
 
 
-def statClassifier(gbm, Y, predictions):
-    print(metrics.classification_report(Y, predictions))
+def statClassifier(gbm, Y, predictions, verbose=True):
+    if verbose:
+        print(metrics.classification_report(Y, predictions))
     mat = metrics.confusion_matrix(Y, predictions)
-    print("Confusion matrix:")
-    print(mat)
+    if verbose:
+        print("Confusion matrix:")
+        print(mat)
     prec, rec, fmeasure, support = metrics.precision_recall_fscore_support(Y, predictions)
-    print("Importance of features:")
     weights = gbm.feature_importances_
-    print(weights)
+    if verbose:
+        print("Importance of features:")
+        print(weights)
     res = dict(precision=prec, recall=rec, f1=fmeasure, support=support, confmat=mat, weights=weights)
     return res
 

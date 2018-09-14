@@ -1,15 +1,17 @@
 import argparse
 import os
 import pickle
+import sys
 sys.path.append("../Toolbox")
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
 import networkit as nk
 import numpy as np
 import xgboost as xgb
-from Utils import loadings, partitionRes, statNodes
+from Utils import loadings, partitionRes, statNodes, statClassifier
 # path = "/home/vconnes/WeightedCommunityDetection/lfr_5000/mk100/k20/muw0.4/4/"
 path = "/home/vconnes/WeightedCommunityDetection/lfr_5000/mk100/k20/muw0.4/5/"
+addAssort = True
 # %%
 
 argparser = argparse.ArgumentParser()
@@ -24,20 +26,20 @@ tot = G.totalEdgeWeight()
 # %%
 edges = G.edges()
 X, Y, target, features = statNodes(G, gt_partition, edges, addAssort=addAssort)
-res = {"target"=target, "features"=features}
+res = {"target": target, "features": features}
 X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=.2,
                                                     random_state=0)
 print(f"Trainning set:{len(X_train)} samples")
 print(f"Testing set:{len(X_test)} samples")
 
 # %%
- if addAssort:
-        gbm = xgb.XGBClassifier(max_depth=8, n_estimators=300, learning_rate=0.05).fit(X_train, Y_train)
-    else:
-        gbm = xgb.XGBClassifier(max_depth=3, n_estimators=300, learning_rate=0.05).fit(X_train, Y_train)
+if addAssort:
+    gbm = xgb.XGBClassifier(max_depth=8, n_estimators=300, learning_rate=0.05).fit(X_train, Y_train)
+else:
+    gbm = xgb.XGBClassifier(max_depth=3, n_estimators=300, learning_rate=0.05).fit(X_train, Y_train)
 
 predictions = gbm.predict(X_test)
-res = statClassifier(gbm, Y, predictions)
+res = statClassifier(gbm, Y_test, predictions)
 
 # %%
 # xgb.plot_importance(gbm)
@@ -110,6 +112,10 @@ res = statClassifier(gbm, Y, predictions)
 if addAssort:
     with open(os.path.join(path, "xp2_7.pickle"), "wb") as file:
         pickle.dump(res, file)
+    # with open(os.path.join(path, "ownModel_7.dat"), "wb") as file:
+    #     pickle.dump(gbm, file)
 else:
     with open(os.path.join(path, "xp2.pickle"), "wb") as file:
         pickle.dump(res, file)
+    # with open(os.path.join(path, "ownModel.dat"), "wb") as file:
+    #     pickle.dump(gbm, file)
