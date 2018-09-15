@@ -1,12 +1,9 @@
 import os
 import pickle
-import random
-import re
-import argparse
+import xgboost as xgb
 import sys
 sys.path.append("../Toolbox")
 from Utils import loadings, statNodes, representativeSamples, extractParams
-import xgboost as xgb
 # %%
 ref = representativeSamples()
 for i, path in enumerate(ref):

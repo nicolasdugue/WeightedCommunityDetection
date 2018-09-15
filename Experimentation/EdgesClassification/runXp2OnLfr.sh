@@ -19,7 +19,7 @@ do
       python3 ResultOn.py $DIR --addAssort &
 done
 
-for DIR in LISTGRAPH
+for DIR in $LISTGRAPH
 do
   echo "computing on $DIR";
   Name=`expr match "$DIR" ".*/lfr_5000/\(mk[0-9]*/k[0-9]*/muw[0-9]*\.[0-9]*/[0-9]*\)$"`;

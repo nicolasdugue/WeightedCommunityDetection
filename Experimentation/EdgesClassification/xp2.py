@@ -1,25 +1,19 @@
-import sys
-sys.path.append("../Toolbox")
-import os
-import pickle
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
+sys.path.append("../Toolbox")
 from Utils import architecture
 # %%
-
-ldict, list_graph, mk, k, mu, reslabel = architecture("xp2_7.pickle")
-print(reslabel)
-# %%
-def plotresult(ldict):
+def plotresult(ldict, reslabel, title=""):
     Y = [[], []]
     Yerr = [[], []]
-    target = ldict[0]["target"]
+    target = ldict[next(k for k in ldict.keys())]["target"]
     Xlabel = []
     for p in reslabel:
         if p == "target" or p == "features":
-            print(f"{p}:{ldict[0][p]}")
+            print(f"{p}:{ldict[next(k for k in ldict.keys())][p]}")
         else:
-            X = [d[p] for d in ldict if d]
+            X = [ldict[path][p] for path in ldict if ldict[path]]
             Xmean = np.mean(X, axis=0)
             Xstd = np.std(X, axis=0)
             print(f"{p}:{Xmean}")
@@ -29,35 +23,66 @@ def plotresult(ldict):
                 X = X / sum(Xmean)
                 Xmean = np.mean(X, axis=0)
                 Xstd = np.std(X, axis=0)
-            Y[0].append(Xmean[0])
-            Y[1].append(Xmean[1])
-            Yerr[0].append(Xstd[0])
-            Yerr[1].append(Xstd[1])
-            Xlabel.append(p)
+            else:
+                Xlabel.append(p)
+                Y[0].append(Xmean[0])
+                Y[1].append(Xmean[1])
+                Yerr[0].append(Xstd[0])
+                Yerr[1].append(Xstd[1])
 
-    plt.figure(figsize=(7, 5))
-    pos = [0, 0.35, 1, 1.35, 2, 2.35, 2.70, 2.70+1-0.5, 2.70+1-0.35+0.35]
+    plt.figure(figsize=(15, 10))
     pos = np.arange(len(Y[1]))
-    plt.bar(pos, Y[0], 0.35, yerr=Yerr[0], label=target[0])
+    ax = plt.bar(pos, Y[0], 0.35, yerr=Yerr[0], label=target[0])
+    for rect in ax.patches:
+        height = rect.get_height()
+        plt.text(rect.get_x() + rect.get_width()/2, -0.1, f"{height:.2f}", color="blue")
 
     pos = np.arange(len(Y[1])) + 0.35
-    plt.bar(pos, Y[1], 0.35, yerr=Yerr[1], label=target[1])
+    ax = plt.bar(pos, Y[1], 0.35, yerr=Yerr[1], label=target[1])
+    for rect in ax.patches:
+        height = rect.get_height()
+        plt.text(rect.get_x() + rect.get_width()/2, -0.1, f"{height:.2f}", color="orange")
+
 
     pos = (np.arange(len(Y[1])) + 0.35/2)
-    plt.bar(pos, np.average([Y[0], Y[1]], axis=0, weights=weights), 0.10,
+    ax = plt.bar(pos, np.average([Y[0], Y[1]], axis=0, weights=weights), 0.10,
             # yerr=np.average([Yerr[0], Yerr[1]], axis=0, weights=weights),
             label="Weighted average", color="red")
-    plt.bar(pos, np.average([Y[0], Y[1]], axis=0), 0.10,
-            # yerr=np.average([Yerr[0], Yerr[1]], axis=0),
-            label="Average", color="green")
-    plt.xticks(np.arange(len(Xlabel)) + 0.35/2, Xlabel)
+    for rect in ax.patches:
+        height = rect.get_height()
+        plt.text(rect.get_x() + rect.get_width()/2, -0.05, f"{height:.2f}", color="red")
+
+    # plt.bar(pos, np.average([Y[0], Y[1]], axis=0), 0.10,
+    #         # yerr=np.average([Yerr[0], Yerr[1]], axis=0),
+    #         label="Average", color="green")
+    print(Xlabel)
+    for rect, x in zip(ax.patches, Xlabel):
+        plt.text(rect.get_x(), -0.18, x)
+    plt.title(title)
+    plt.yticks(np.arange(0, 1.1, 0.1))
+    plt.xticks([], [])
     plt.legend(loc="upper left")
     plt.show()
 # %%
-plotresult(ldict)
+ldict7, _, _, mu7, reslabel7 = architecture("xp2_7.pickle")
+print(reslabel7)
 # %%
-plotresult([ldict[i] for i in mu["muw0.4"]])
+plotresult(ldict7, reslabel7)
 # %%
-plotresult([ldict[i] for i in mu["muw0.3"]])
+plotresult({i: ldict7[i] for i in mu7["muw0.4"]}, reslabel7)
 # %%
-plotresult([ldict[i] for i in mu["muw0.2"]])
+plotresult({i: ldict7[i] for i in mu7["muw0.3"]}, reslabel7)
+# %%
+plotresult({i: ldict7[i] for i in mu7["muw0.2"]}, reslabel7)
+# %%
+ldict,  _, _, mu, reslabel = architecture("xp2.pickle")
+print(reslabel)
+# %%
+plotresult(ldict, reslabel)
+# %%
+plotresult({i: ldict[i] for i in mu["muw0.4"]}, reslabel)
+# %%
+plotresult({i: ldict[i] for i in mu["muw0.3"]}, reslabel)
+# %%
+plotresult({i: ldict[i] for i in mu["muw0.2"]}, reslabel)
+# %%

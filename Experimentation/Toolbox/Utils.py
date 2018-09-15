@@ -28,11 +28,11 @@ def representativeSamples():
                  os.path.join(exec_path, "../../lfr_5000/mk300/k25/muw0.2/37/"),
                  os.path.join(exec_path, "../../lfr_5000/mk500/k25/muw0.2/26/"),
                  os.path.join(exec_path, "../../lfr_5000/mk500/k25/muw0.2/4/")]
-    for (dirpath, dirnames, filenames) in os.walk(os.path.join(exec_path, "../../lfr_5000")):
+    for (dirpath, dirnames, filenames) in os.walk(os.path.abspath(os.path.join(exec_path, "../../lfr_5000"))):
         if "network.dat" in filenames and\
            "community.dat" in filenames and\
            all(not os.path.samefile(dirpath, ban_path) for ban_path in ban_paths):
-           list_graph.append(os.path.abspath(dirpath))
+           list_graph.append(dirpath)
 
     ref = random.sample(set(filter(lambda x: "/muw0.4/" in x, list_graph)), 10) + \
           random.sample(set(filter(lambda x: "/muw0.2/" in x, list_graph)), 10) + \
@@ -151,42 +151,31 @@ def statClassifier(gbm, Y, predictions, verbose=True):
 
 
 def architecture(picklename):
-    list_graph = []
-    mk = {}
-    k = {}
-    mu = {}
-
-    nb_graph, gid = 0, 0
-    for (dirpath, dirnames, filenames) in os.walk("../../lfr_5000"):
-        if filenames:
-            nb_graph += 1
-        if "network.dat" in filenames and "community.dat" in filenames:
+    list_graph, ldict = [], {}
+    dmk, dk, dmu = {}, {}, {}
+    failled, gid = 0, 0
+    exec_path = os.path.split(os.path.realpath(__file__))[0]
+    for (dirpath, dirnames, filenames) in os.walk(os.path.abspath(os.path.join(exec_path, "../../lfr_5000"))):
+        if picklename in filenames:
             list_graph.append(dirpath)
-            dirpath, param = os.path.split(os.path.split(dirpath)[0])
-            mu[param] = mu.get(param, []) + [gid]
-            dirpath, param = os.path.split(dirpath)
-            k[param] = k.get(param, []) + [gid]
-            dirpath, param = os.path.split(dirpath)
-            mk[param] = mk.get(param, []) + [gid]
+            curmk, curk, curmu = pattern.match(dirpath).groups()
+            dmu[curmu] = dmu.get(curmu, []) + [dirpath]
+            dk[curk] = dk.get(curk, []) + [dirpath]
+            dmk[curmk] = dmk.get(curmk, []) + [dirpath]
             gid += 1
-    print(f"mising: {nb_graph-len(list_graph)}/{nb_graph}")
+    print(f"Number of files: {gid}")
+
+    flagFirst = True
     for path in list_graph:
         try:
             with open(os.path.join(path, picklename), "rb") as file:
-                reslabel = list(pickle.load(file).keys())
-        except FileNotFoundError as e:
-            # print(e)
-            continue
-        break
-    failled, ldict = 0, []
-    for path in list_graph:
-        try:
-            with open(os.path.join(path, picklename), "rb") as file:
-                ldict.append(pickle.load(file))
+                ldict[path] = pickle.load(file)
+                if flagFirst:
+                    flagFirst, reslabel = False, list(ldict[path].keys())
         except FileNotFoundError as e:
             failled += 1
             ldict.append(None)
             # print(e)
             continue
-    print(f"fail: {failled}/{len(list_graph)}")
-    return ldict, list_graph, mk, k, mu, reslabel
+    print(f"fail: [{failled}/{gid}] {failled/gid*100:.2f}%")
+    return ldict, dmk, dk, dmu, reslabel

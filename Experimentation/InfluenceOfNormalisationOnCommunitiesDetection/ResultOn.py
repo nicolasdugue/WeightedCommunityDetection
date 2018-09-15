@@ -56,10 +56,9 @@ for normname, functor in norma.items():
             print(f"1 community detected due to total edge weight equal 0")
             print(f"NMI:{NMI}")
             print(f"ARI:{ARI}")
-            res["numberOfCom" + evalname] = 1
-            res["NMI" + evalname] = NMI
-            res["ARI" + evalname] = ARI
-
+            res[f"numberOfCom_{evalname}_{normname}"] = 1
+            res[f"NMI_{evalname}_{normname}"] = NMI
+            res[f"ARI_{evalname}_{normname}"] = ARI
 print("NMI classement:")
 print(sorted([(k, v) for k, v in res.items() if "NMI" in k], key=lambda x: x[1]))
 print("ARI classement:")

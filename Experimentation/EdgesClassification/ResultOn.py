@@ -1,31 +1,30 @@
 import argparse
 import os
 import pickle
+import xgboost as xgb
+from sklearn.model_selection import train_test_split
 import sys
 sys.path.append("../Toolbox")
-from sklearn.model_selection import train_test_split
-from sklearn import metrics
-import networkit as nk
-import numpy as np
-import xgboost as xgb
-from Utils import loadings, partitionRes, statNodes, statClassifier
+from Utils import loadings, statNodes, statClassifier
 # path = "/home/vconnes/WeightedCommunityDetection/lfr_5000/mk100/k20/muw0.4/4/"
-path = "/home/vconnes/WeightedCommunityDetection/lfr_5000/mk100/k20/muw0.4/5/"
-addAssort = True
+addAssort=True
+verbose=False
 # %%
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument("path", help="Directory with network and community", type=str)
 argparser.add_argument("--addAssort", help="If true assortativity features are used, default=True", action="store_true", default=False)
+argparser.add_argument("--noVerbose", help="If true assortativity features are used, default=True", action="store_true", default=False)
 args = argparser.parse_args()
 path = args.path
 addAssort = args.addAssort
+verbose = not args.noVerbose
 # %%
 G, gt_partition, _ = loadings(path)
 tot = G.totalEdgeWeight()
 # %%
 edges = G.edges()
-X, Y, target, features = statNodes(G, gt_partition, edges, addAssort=addAssort)
+X, Y, target, features = statNodes(G, gt_partition, edges, addAssort=addAssort, verbose=verbose)
 res = {"target": target, "features": features}
 X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=.2,
                                                     random_state=0)
@@ -39,7 +38,7 @@ else:
     gbm = xgb.XGBClassifier(max_depth=3, n_estimators=300, learning_rate=0.05).fit(X_train, Y_train)
 
 predictions = gbm.predict(X_test)
-res = statClassifier(gbm, Y_test, predictions)
+res.update(statClassifier(gbm, Y_test, predictions))
 
 # %%
 # xgb.plot_importance(gbm)
