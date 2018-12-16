@@ -1,106 +1,53 @@
 import argparse
 import os
 import pickle
-from sklearn.model_selection import train_test_split
-from sklearn import metrics
-import networkit as nk
-import numpy as np
 import xgboost as xgb
+from sklearn.model_selection import train_test_split
+import sys
+sys.path.append("../Toolbox")
+from Utils import loadings, statNodes, statClassifier
+# path = "/home/vconnes/WeightedCommunityDetection/lfr_5000/mk100/k20/muw0.4/4/"
+addAssort=True
+verbose=False
 # %%
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument("path", help="Directory with network and community", type=str)
+argparser.add_argument("--addAssort", help="If true assortativity features are used, default=True", action="store_true", default=False)
+argparser.add_argument("--noVerbose", help="If true assortativity features are used, default=True", action="store_true", default=False)
 args = argparser.parse_args()
 path = args.path
+addAssort = args.addAssort
+verbose = not args.noVerbose
 # %%
-# path = "/home/vconnes/WeightedCommunityDetection/lfr_5000/mk100/k20/muw0.4/4/"
-print("__LOADINGS__")
-# loading of graph
-G = nk.graphio.readGraph(os.path.join(path, "network.dat"), weighted=True, fileformat=nk.Format.EdgeListTabOne)
-removed = []
-for u, v in G.edges():
-    if G.weight(u, v) == 0:
-        removed.append((u, v))
-res = dict(numberOfnodes=G.numberOfNodes(), numberOfEdges=G.numberOfEdges(),
-           percentOfNulWeight=len([1 for u, v in G.edges() if G.weight(u, v) == 0])/G.numberOfEdges())
-for (u, v) in removed:
-    G.removeEdge(u, v)
-nk.overview(G)
+G, gt_partition, _ = loadings(path)
 tot = G.totalEdgeWeight()
-print(tot)
-# loading of communities
-evalname = "Groundtruth"
-print(f"__{evalname}__")
-gt_partition = nk.community.readCommunities(os.path.join(path, "community.dat"), format="edgelist-t1")
-nk.community.inspectCommunities(gt_partition, G)
-res["numberOfCom" + evalname] = gt_partition.numberOfSubsets()
-print(f"{gt_partition.numberOfSubsets()} community detected")
-
-edges = G.edges()
-cc = nk.centrality.LocalClusteringCoefficient(G).run().scores()
 # %%
-deg_min = []
-deg_max = []
-clust_min = []
-clust_max = []
-weight = []
-# deg_moyn_min, deg_moyn_max = [], []
-inside = []
-
-for (u, v) in edges:
-    degU, degV = G.weightedDegree(u), G.weightedDegree(v)
-    clustU, clustV = cc[u], cc[v]
-
-    deg_min.append(min(degU, degV))
-    deg_max.append(max(degU, degV))
-    clust_min.append(min(clustU, clustV))
-    clust_max.append(max(clustU, clustV))
-    weight.append(G.weight(u, v))
-    minnode, maxnode = sorted([u, v], key=G.weightedDegree)
-    # deg_moyn_min.append(np.mean([G.weightedDegree(n) for n in G.neighbors(minnode)]))
-    # deg_moyn_max.append(np.mean([G.weightedDegree(n) for n in G.neighbors(maxnode)]))
-
-    if gt_partition.subsetOf(u) == gt_partition.subsetOf(v):
-        inside.append(1)
-    else:
-        inside.append(0)
-
-target = ["outside", "inside"]
-features = ["deg_min", "deg_max", "clust_min", "clust_max", "weight"]
-# features += ["deg_moyn_min", "deg_moyn_max" ]
-X = np.array([deg_min, deg_max, clust_min, clust_max, weight
-              # , deg_moyn_min, deg_moyn_max
-              ])
-Y = inside
-X = X.transpose()
-samples, features = X.shape
-print(f"{features} features on {samples} samples")
-
+edges = G.edges()
+X, Y, target, features = statNodes(G, gt_partition, edges, addAssort=addAssort, verbose=verbose)
+res = {"target": target, "features": features}
 X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=.2,
                                                     random_state=0)
 print(f"Trainning set:{len(X_train)} samples")
 print(f"Testing set:{len(X_test)} samples")
 
 # %%
-gbm = xgb.XGBClassifier(max_depth=3, n_estimators=300, learning_rate=0.05).fit(X_train, Y_train)
+if addAssort:
+    gbm = xgb.XGBClassifier(max_depth=8, n_estimators=300, learning_rate=0.05).fit(X_train, Y_train)
+else:
+    gbm = xgb.XGBClassifier(max_depth=3, n_estimators=300, learning_rate=0.05).fit(X_train, Y_train)
+
 predictions = gbm.predict(X_test)
+res.update(statClassifier(gbm, Y_test, predictions))
 
-
-print(metrics.classification_report(Y_test, predictions))
-mat = metrics.confusion_matrix(Y_test, predictions)
-print("Confusion matrix:")
-print(mat)
-prec, rec, fmeasure, support = metrics.precision_recall_fscore_support(Y_test, predictions)
-print("Importance of features:")
-weights = gbm.feature_importances_
-print(weights)
-# xgb.plot_importance(gbm)
 # %%
+# xgb.plot_importance(gbm)
 # xgb.plot_tree(gbm, num_trees=2)
 # fig = plt.gcf()
 # fig.set_size_inches(10, 10)
-# fig.savefig('tree.png')
+# fig.show
 # %%
+
 # pred_score = gbm.predict_proba(X_test)
 # pred_score = [pred_score[i][val] for i, val in enumerate(Y_test)]
 # precisiondata = dict()
@@ -120,8 +67,6 @@ print(weights)
 #
 # data = (precisiondata, recalldata, average_precision_data)
 
-res = dict(target=target, precision=prec, recall=rec, f1=fmeasure, support=support, confmat=mat,
-           features=features, weights=weights)
 # %%
 # from itertools import cycle
 # import matplotlib.pyplot as plt
@@ -163,5 +108,13 @@ res = dict(target=target, precision=prec, recall=rec, f1=fmeasure, support=suppo
 #
 # plt.savefig(f"precrec.pdf")
 # %%
-with open(os.path.join(path, "xp2.pickle"), "wb") as file:
-    pickle.dump(res, file)
+if addAssort:
+    with open(os.path.join(path, "xp2_7.pickle"), "wb") as file:
+        pickle.dump(res, file)
+    # with open(os.path.join(path, "ownModel_7.dat"), "wb") as file:
+    #     pickle.dump(gbm, file)
+else:
+    with open(os.path.join(path, "xp2.pickle"), "wb") as file:
+        pickle.dump(res, file)
+    # with open(os.path.join(path, "ownModel.dat"), "wb") as file:
+    #     pickle.dump(gbm, file)

@@ -1,124 +1,117 @@
 from functools import partial
+import sys
+sys.path.append("../Toolbox")
 import argparse
 import networkit as nk
+from new_normalization import glove
+from Utils import loadings, partitionRes, statNodes, statClassifier, extractParams
+from PLPvariations import PLP, PLPImproveNico
 import os
+import xgboost as xgb
 import pickle
-from new_normalization import fake_pmi, glove, iterative_rev_degree_order, pmi, ppmi, standard
-
-norma = {f.__name__: f for f in [glove,
-                                 fake_pmi,
-                                 iterative_rev_degree_order,
-                                 pmi,
-                                 standard,
-                                 ppmi,
-                                 ]}
-norma["glovexmax50alpha0.2"] = partial(glove, xmax=50, alpha=float(0.2))
-norma["glovexmax40alpha0.2"] = partial(glove, xmax=40, alpha=float(0.2))
-norma["glovexmax30alpha0.3"] = partial(glove, xmax=30, alpha=float(0.3))
-classic_methods = [("Louvain", lambda G: nk.community.detectCommunities(G)),
-                   ("Singleton", lambda G: nk.community.ClusteringGenerator().makeSingletonClustering(G)),
-                   ("AllInOne", lambda G: nk.community.ClusteringGenerator().makeOneClustering(G)),
-                   ("PLP", lambda G: nk.community.detectCommunities(G, nk.community.PLP(G)))]
+path = "/home/vconnes/WeightedCommunityDetection/lfr_5000/mk100/k20/muw0.4/4/"
+addAssort = True
+verbose=False
 # %%
 
-
-# def BCC(G):
-#     name = G.getName()
-#     cc = nk.components.ConnectedComponents(G)
-#     cc.run()
-#     iccmax = max(cc.getPartition().subsetSizeMap().items(), key=lambda x: x[1])[0]
-#     Gc = G.subgraphFromNodes(cc.getPartition().getMembers(iccmax))
-#     Gc.setName(name + "cc")
-#     return Gc
-
-
-# %%
 argparser = argparse.ArgumentParser()
 argparser.add_argument("path", help="Directory with network and community", type=str)
+argparser.add_argument("--addAssort", help="If true assortativity features are used, default=True", action="store_true", default=False)
+argparser.add_argument("--noVerbose", help="If true assortativity features are used, default=True", action="store_true", default=False)
 args = argparser.parse_args()
 path = args.path
-print("__LOADINGS__")
+addAssort = args.addAssort
+verbose = not args.noVerbose
 # %%
-# loading of graph
-# path = "/home/vconnes/WeightedCommunityDetection/lfr_5000/mk100/k20/muw0.4/4/"
-loadG = nk.graphio.readGraph(os.path.join(path, "network.dat"), weighted=True, fileformat=nk.Format.EdgeListTabOne)
+if addAssort:
+    refs = [file.path for file in os.scandir("../EdgesClassificationWithSavedModel/reference_model_7")]
+else:
+    refs = [file.path for file in os.scandir("../EdgesClassificationWithSavedModel/reference_model")]
+G, gt_partition, _ = loadings(path, verbose=verbose)
+tot = G.totalEdgeWeight()
 
-# triatement of nul edge
-nnode, medge = loadG.numberOfNodes(), loadG.numberOfEdges()
-removedEdges = []
-for u, v in loadG.edges():
-    if loadG.weight(u, v) == 0:
-        removedEdges.append((u, v))
-for (u, v) in removedEdges:
-    loadG.removeEdge(u, v)
-print(f"{len(removedEdges)}/{medge} {len(removedEdges)/medge*100} % of nul weighted edges removed")
-removedNodes = []
-for n in loadG.nodes():
-    if loadG.weightedDegree(n) == 0:
-        removedNodes.append(n)
-for n in removedNodes:
-    loadG.removeNode(n)
-print(f"{len(removedNodes)}/{nnode} {len(removedNodes)/nnode*100} % of nul degree nodes removed")
-# keeping BCC
-nk.overview(loadG)
-res = dict(numberOfnodes=loadG.numberOfNodes(), numberOfEdges=loadG.numberOfEdges(), nullEdges=len(removedEdges), nullNodes=len(removedNodes))
-tot = loadG.totalEdgeWeight()
-print(tot)
-# loading of communities
-evalname = "Groundtruth"
-print(f"__{evalname}__")
-gt_partition = nk.community.readCommunities(os.path.join(path, "community.dat"), format="edgelist-t1")
-nk.community.inspectCommunities(gt_partition, loadG)
-res["numberOfCom" + evalname] = gt_partition.numberOfSubsets()
-print(f"{gt_partition.numberOfSubsets()} community detected")
 # %%
-# Classic method
-print("__CLASSIC_METHODS__")
-for evalname, fdetection in classic_methods:
-    print(f"__{evalname}__")
-    detected = fdetection(loadG)
-    res["numberOfCom" + evalname] = detected.numberOfSubsets()
-    print(f"{gt_partition.numberOfSubsets()} community detected")
-    NMI = nk.community.NMIDistance().getDissimilarity(loadG, gt_partition, detected)
-    print(f"NMI:{NMI}")
-    res["NMI" + evalname] = NMI
-    ARI = nk.community.AdjustedRandMeasure().getDissimilarity(loadG, gt_partition, detected)
-    print(f"ARI:{ARI}")
-    res["ARI" + evalname] = ARI
+norma = dict()
+# norma["glovexmax50alpha0.2"] = partial(glove, xmax=50, alpha=float(0.2))
+# norma["glovexmax40alpha0.2"] = partial(glove, xmax=40, alpha=float(0.2))
+norma["glovexmax30alpha0.3"] = partial(glove, xmax=30, alpha=float(0.3))
+detectorLouv = lambda G: nk.community.detectCommunities(G)
+detector = lambda G: nk.community.detectCommunities(G, nk.community.PLP(G))
+res = {}
+detected = detectorLouv(G)
+res.update(partitionRes(G, gt_partition, detected, "Louvain", "", verbose=verbose))
+detected = detector(G)
+res.update(partitionRes(G, gt_partition, detected, "PLP", "", verbose=verbose))
+res.update(partitionRes(G, gt_partition, PLP(G), "ownPLP", "", verbose=verbose))
 # %%
-# Normalization
-print("__NORMALIZATION__")
-for normname, functor in norma.items():
-    print(f"__{normname}__")
-    Gn = functor(loadG)
-    nk.overview(Gn)
-    print("tot: ", Gn.totalEdgeWeight())
-    assert tot == loadG.totalEdgeWeight()
-    for evalname, fdetection in [("Louvain", nk.community.detectCommunities), ("PLP", lambda G: nk.community.detectCommunities(G, nk.community.PLP(G)))]:
-        evalname = normname + "+" + evalname
-        print(f"__{evalname}__")
-        if Gn.totalEdgeWeight() != 0:
-            detected = fdetection(Gn)
-            res["numberOfCom" + evalname] = detected.numberOfSubsets()
-            NMI = nk.community.NMIDistance().getDissimilarity(loadG, gt_partition, detected)
-            print(f"{gt_partition.numberOfSubsets()} community detected")
-            print(f"NMI:{NMI}")
-            res["NMI" + evalname] = NMI
-            ARI = nk.community.AdjustedRandMeasure().getDissimilarity(loadG, gt_partition, detected)
-            print(f"ARI:{ARI}")
-            res["ARI" + evalname] = ARI
-        else:
-            ARI, NMI = 1, 1
-            print(f"1 community detected due to total edge weight equal 0")
-            print(f"NMI:{NMI}")
-            print(f"ARI:{ARI}")
-            res["numberOfCom" + evalname] = 1
-            res["NMI" + evalname] = NMI
-            res["ARI" + evalname] = ARI
-
-print("NMI classement:")
-print(sorted([(k, v) for k, v in res.items() if "NMI" in k], key=lambda x: x[1]))
-print("ARI classement:")
-print(sorted([(k, v) for k, v in res.items() if "ARI" in k], key=lambda x: x[1]))
-with open(os.path.join(path, "xp1.pickle"), "wb") as file:
-    pickle.dump(res, file)
+for name, norm in norma.items():
+    print(name, "\n")
+    Gn = norm(G)
+    detected = detector(Gn)
+    res.update(partitionRes(G, gt_partition, detected, "PLP", name, verbose=verbose))
+# %%
+edges = G.edges()
+X, Y, target, features = statNodes(G, gt_partition, edges, addAssort=addAssort, verbose=verbose)
+if addAssort:
+    gbm = xgb.XGBClassifier(max_depth=8, n_estimators=300, learning_rate=0.05).fit(X, Y)
+else:
+    gbm = xgb.XGBClassifier(max_depth=3, n_estimators=300, learning_rate=0.05).fit(X, Y)
+# %%
+predictions = gbm.predict(X)
+proba_pred = gbm.predict_proba(X)
+res.update(target=target, features=features)
+res.update({"own_" + k:v for k, v in statClassifier(gbm, Y, predictions, verbose=verbose).items()})
+inter, intra = {}, {}
+for n in G.nodes():
+    inter[n], intra[n] = [], []
+cpt = 0
+for (u, v) in edges:
+    if proba_pred[cpt][0] > 0.7:
+        inter[u].append(v)
+        inter[v].append(u)
+    if proba_pred[cpt][1] > 0.7:
+        intra[u].append(v)
+        intra[v].append(u)
+    cpt += 1
+res.update({"own_" + k:v for k, v in partitionRes(G, gt_partition, PLPImproveNico(G, inter=inter, intra=intra), "PLPnico", "", verbose=verbose).items()})
+# %%
+refres = {}
+for i, ref in enumerate(refs):
+    params = extractParams(ref) + ("all",)
+    with open(ref, "rb") as model:
+        gbm = pickle.load(model)
+    print(f"[{i+1}/{len(refs)}]: {ref}")
+    predictions = gbm.predict(X)
+    proba_pred = gbm.predict_proba(X)
+    statClass = statClassifier(gbm, Y, predictions, verbose=verbose)
+    inter = dict()
+    intra = dict()
+    for node in G.nodes():
+        inter[node] = []
+        intra[node] = []
+    cpt = 0
+    for (u, v) in edges:
+        if proba_pred[cpt][0] > 0.7:
+            inter[u].append(v)
+            inter[v].append(u)
+        if proba_pred[cpt][1] > 0.7:
+            intra[u].append(v)
+            intra[v].append(u)
+        cpt += 1
+    statPart = partitionRes(G, gt_partition, PLPImproveNico(G, inter=inter, intra=intra), "PLPnico", "", verbose=verbose)
+    for param in params:
+        try:
+            refres["train=" + param] += [{**statPart, **statClass}]
+        except KeyError:
+            refres["train=" + param] = [{**statPart, **statClass}]
+# %%
+for param, ldict in refres.items():
+    for sk in ldict[0].keys():
+        res[param + "_" + sk]= [d[sk] for d in ldict]
+# %%
+if addAssort:
+    with open(os.path.join(path, "xp4_7.pickle"), "wb") as file:
+        pickle.dump(res, file)
+else:
+    with open(os.path.join(path, "xp4.pickle"), "wb") as file:
+        pickle.dump(res, file)
